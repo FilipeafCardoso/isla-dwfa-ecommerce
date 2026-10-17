@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Node (a partir da Aula 05 · from Aula 05 on)
+node_modules/
+dist/
+
+# Segredos e dados locais · secrets and local data — NUNCA no git · NEVER in git
+.env
+*.sqlite3
+pgdata/
+staticfiles/
+
+# Editores · editors
+.vscode/
+.idea/
+.DS_Store
+
+# override local · local override
+compose.override.yaml
