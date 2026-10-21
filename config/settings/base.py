@@ -25,9 +25,14 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    #apps de terceiros - 3rd parties apps
+    "rest_framework",
+    "django_filters",
+    "drf_spectacular",
     # apps do projeto · project apps
     "accounts",
     "core",
+    "store",
 ]
 
 MIDDLEWARE = [
@@ -81,3 +86,26 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# DRF & OpenAPI Settings
+REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20,
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
+    ],
+    # Omissão deliberada para ver os dados na Browsable API
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ],
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'E-commerce API (Ficha 02)',
+    'VERSION': '1.0.0',
+    'DESCRIPTION': 'API REST para o projeto de DWFA',
+    'SERVE_INCLUDE_SCHEMA': False,
+}
