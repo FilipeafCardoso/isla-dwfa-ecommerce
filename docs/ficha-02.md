@@ -1,0 +1,2 @@
+1. A regra de validação no serializer apenas é executada nos caminhos que passam pela API. Um caminho de escrita direto pela base de dados passaria ao lado dessa validação, daí a necessidade da CheckConstraint.
+2. Trocar para CursorPagination, evitando o custo de "offset" (obriga a DB a ler todas as linhas até à página atual). A condição é que a tabela deve estar ordenada por uma coluna imutável e única.
