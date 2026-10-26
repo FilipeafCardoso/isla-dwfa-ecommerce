@@ -5,6 +5,7 @@ from decimal import Decimal
 import pytest
 from django.conf import settings
 from rest_framework.test import APIClient
+from shop.factories import CustomerFactory, OrderFactory, OrderItemFactory, ProductFactory
 
 from shop.factories import CategoryFactory, OrderFactory, OrderItemFactory, ProductFactory
 
@@ -29,8 +30,11 @@ def test_create_and_validate_order_item():
     product = ProductFactory(stock=3, price=Decimal("9.90"))
     order = OrderFactory()
     api = APIClient()
+    api.force_authenticate(user=order.customer.user)  #Autenticação
+
     r = api.post("/api/v1/order-items/", {"order": order.id, "product": product.id, "quantity": 2})
     assert r.status_code == 201
+
     assert r.json()["unit_price"] == "9.90"  # copied by the server · copiado pelo servidor
     r = api.post(
         "/api/v1/order-items/", {"order": OrderFactory().id, "product": product.id, "quantity": 5}
@@ -42,13 +46,18 @@ def test_create_and_validate_order_item():
 
 @pytest.mark.django_db
 def test_order_list_is_paginated_without_n_plus_one(django_assert_max_num_queries):
-    for order in OrderFactory.create_batch(25):
+
+    customer = CustomerFactory()
+    for order in OrderFactory.create_batch(25, customer=customer):
         OrderItemFactory.create_batch(3, order=order)
+    api = APIClient()
+    api.force_authenticate(user=customer.user)  #Dono das 25 encomendas
     with django_assert_max_num_queries(
         3
     ):  # count + orders (JOIN customer/user) + items (JOIN product)
-        response = APIClient().get("/api/v1/orders/")
+        response = api.get("/api/v1/orders/")
     assert response.status_code == 200
+
     body = response.json()
     assert body["count"] == 25 and len(body["results"]) == PAGE_SIZE
     first = body["results"][0]
@@ -57,11 +66,14 @@ def test_order_list_is_paginated_without_n_plus_one(django_assert_max_num_querie
 
 @pytest.mark.django_db
 def test_pay_then_pay_again_is_409():
+
     order = OrderFactory()
     OrderItemFactory(order=order, product=ProductFactory(price=Decimal("10.00")), quantity=2)
     api = APIClient()
+    api.force_authenticate(user=order.customer.user)  # Só o dono paga
     r = api.post(f"/api/v1/orders/{order.id}/pay/")
     assert r.status_code == 200 and r.json()["status"] == "paid"
+
     r = api.post(f"/api/v1/orders/{order.id}/pay/")
     assert r.status_code == 409 and r.json()["title"] == "Conflict"
 

@@ -6,6 +6,7 @@ here; whatever differs comes from the environment (`.env`, never in git).
 """
 
 from pathlib import Path
+from datetime import timedelta
 
 import environ
 
@@ -33,6 +34,7 @@ INSTALLED_APPS = [
     "accounts",
     "core",
     "shop",
+    "rest_framework_simplejwt.token_blacklist",
 ]
 
 MIDDLEWARE = [
@@ -98,7 +100,11 @@ REST_FRAMEWORK = {
         "rest_framework.filters.SearchFilter",
         "rest_framework.filters.OrderingFilter",
     ],
-    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.AllowAny"],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "EXCEPTION_HANDLER": "shop.api.problem_details_handler",
 }
 
@@ -107,4 +113,12 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "Ficha 02 — domínio e-commerce exposto com Django REST Framework",
     "VERSION": "0.2.0",
     "SERVE_INCLUDE_SCHEMA": False,
+}
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "UPDATE_LAST_LOGIN": True,
 }
