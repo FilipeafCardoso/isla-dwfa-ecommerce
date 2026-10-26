@@ -1,155 +1,9 @@
 openapi: 3.0.3
 info:
-  title: E-commerce API (Ficha 02)
-  version: 1.0.0
-  description: API REST para o projeto de DWFA
+  title: ISLA DWFA e-commerce API
+  version: 0.2.0
+  description: Ficha 02 — domínio e-commerce exposto com Django REST Framework
 paths:
-  /api/schema/:
-    get:
-      operationId: schema_retrieve
-      description: |-
-        OpenApi3 schema for this API. Format can be selected via content negotiation.
-
-        - YAML: application/vnd.oai.openapi
-        - JSON: application/vnd.oai.openapi+json
-      parameters:
-      - in: query
-        name: format
-        schema:
-          type: string
-          enum:
-          - json
-          - yaml
-      - in: query
-        name: lang
-        schema:
-          type: string
-          enum:
-          - af
-          - ar
-          - ar-dz
-          - ast
-          - az
-          - be
-          - bg
-          - bn
-          - br
-          - bs
-          - ca
-          - ckb
-          - cs
-          - cy
-          - da
-          - de
-          - dsb
-          - el
-          - en
-          - en-au
-          - en-gb
-          - eo
-          - es
-          - es-ar
-          - es-co
-          - es-mx
-          - es-ni
-          - es-ve
-          - et
-          - eu
-          - fa
-          - fi
-          - fr
-          - fy
-          - ga
-          - gd
-          - gl
-          - he
-          - hi
-          - hr
-          - hsb
-          - hu
-          - hy
-          - ia
-          - id
-          - ig
-          - io
-          - is
-          - it
-          - ja
-          - ka
-          - kab
-          - kk
-          - km
-          - kn
-          - ko
-          - ky
-          - lb
-          - lt
-          - lv
-          - mk
-          - ml
-          - mn
-          - mr
-          - ms
-          - my
-          - nb
-          - ne
-          - nl
-          - nn
-          - os
-          - pa
-          - pl
-          - pt
-          - pt-br
-          - ro
-          - ru
-          - sk
-          - sl
-          - sq
-          - sr
-          - sr-latn
-          - sv
-          - sw
-          - ta
-          - te
-          - tg
-          - th
-          - tk
-          - tr
-          - tt
-          - udm
-          - ug
-          - uk
-          - ur
-          - uz
-          - vi
-          - zh-hans
-          - zh-hant
-      tags:
-      - schema
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/vnd.oai.openapi:
-              schema:
-                type: object
-                additionalProperties: {}
-            application/yaml:
-              schema:
-                type: object
-                additionalProperties: {}
-            application/vnd.oai.openapi+json:
-              schema:
-                type: object
-                additionalProperties: {}
-            application/json:
-              schema:
-                type: object
-                additionalProperties: {}
-          description: ''
   /api/v1/categories/:
     get:
       operationId: v1_categories_list
@@ -243,33 +97,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedCustomerList'
           description: ''
-    post:
-      operationId: v1_customers_create
-      tags:
-      - v1
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Customer'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/Customer'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/Customer'
-        required: true
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      - {}
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Customer'
-          description: ''
   /api/v1/customers/{id}/:
     get:
       operationId: v1_customers_retrieve
@@ -293,29 +120,38 @@ paths:
               schema:
                 $ref: '#/components/schemas/Customer'
           description: ''
-    put:
-      operationId: v1_customers_update
+  /api/v1/order-items/:
+    get:
+      operationId: v1_order_items_list
       parameters:
-      - in: path
-        name: id
+      - in: query
+        name: order
         schema:
           type: integer
-        description: A unique integer value identifying this customer.
-        required: true
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: product
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
       tags:
       - v1
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Customer'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/Customer'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/Customer'
-        required: true
       security:
       - cookieAuth: []
       - basicAuth: []
@@ -325,16 +161,66 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Customer'
+                $ref: '#/components/schemas/PaginatedOrderItemList'
+          description: ''
+    post:
+      operationId: v1_order_items_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderItem'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OrderItem'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OrderItem'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderItem'
+          description: ''
+  /api/v1/order-items/{id}/:
+    get:
+      operationId: v1_order_items_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this order item.
+        required: true
+      tags:
+      - v1
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderItem'
           description: ''
     patch:
-      operationId: v1_customers_partial_update
+      operationId: v1_order_items_partial_update
       parameters:
       - in: path
         name: id
         schema:
           type: integer
-        description: A unique integer value identifying this customer.
+        description: A unique integer value identifying this order item.
         required: true
       tags:
       - v1
@@ -342,13 +228,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchedCustomer'
+              $ref: '#/components/schemas/PatchedOrderItem'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PatchedCustomer'
+              $ref: '#/components/schemas/PatchedOrderItem'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PatchedCustomer'
+              $ref: '#/components/schemas/PatchedOrderItem'
       security:
       - cookieAuth: []
       - basicAuth: []
@@ -358,16 +244,16 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Customer'
+                $ref: '#/components/schemas/OrderItem'
           description: ''
     delete:
-      operationId: v1_customers_destroy
+      operationId: v1_order_items_destroy
       parameters:
       - in: path
         name: id
         schema:
           type: integer
-        description: A unique integer value identifying this customer.
+        description: A unique integer value identifying this order item.
         required: true
       tags:
       - v1
@@ -382,6 +268,20 @@ paths:
     get:
       operationId: v1_orders_list
       parameters:
+      - in: query
+        name: created_from
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: created_to
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: customer
+        schema:
+          type: integer
       - name: ordering
         required: false
         in: query
@@ -400,6 +300,18 @@ paths:
         description: A search term.
         schema:
           type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - cancelled
+          - paid
+          - pending
+        description: |-
+          * `pending` - Pending
+          * `paid` - Paid
+          * `cancelled` - Cancelled
       tags:
       - v1
       security:
@@ -463,40 +375,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/Order'
           description: ''
-    put:
-      operationId: v1_orders_update
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this order.
-        required: true
-      tags:
-      - v1
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Order'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/Order'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/Order'
-        required: true
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Order'
-          description: ''
     patch:
       operationId: v1_orders_partial_update
       parameters:
@@ -548,6 +426,31 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/orders/{id}/cancel/:
+    post:
+      operationId: v1_orders_cancel_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this order.
+        required: true
+      tags:
+      - v1
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+        '409':
+          description: Order is not pending
   /api/v1/orders/{id}/pay/:
     post:
       operationId: v1_orders_pay_create
@@ -572,11 +475,105 @@ paths:
                 $ref: '#/components/schemas/Order'
           description: ''
         '409':
-          description: No response body
+          description: Order is not pending
+  /api/v1/payments/:
+    get:
+      operationId: v1_payments_list
+      parameters:
+      - in: query
+        name: method
+        schema:
+          type: string
+          enum:
+          - card
+          - mbway
+          - transfer
+        description: |-
+          * `card` - Card
+          * `mbway` - MB WAY
+          * `transfer` - Bank transfer
+      - in: query
+        name: order
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPaymentList'
+          description: ''
+  /api/v1/payments/{id}/:
+    get:
+      operationId: v1_payments_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this payment.
+        required: true
+      tags:
+      - v1
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+          description: ''
   /api/v1/products/:
     get:
       operationId: v1_products_list
       parameters:
+      - in: query
+        name: category
+        schema:
+          type: integer
+      - in: query
+        name: in_stock
+        schema:
+          type: boolean
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+      - in: query
+        name: max_price
+        schema:
+          type: number
+      - in: query
+        name: min_price
+        schema:
+          type: number
       - name: ordering
         required: false
         in: query
@@ -753,10 +750,15 @@ components:
           readOnly: true
         name:
           type: string
-          maxLength: 100
+          maxLength: 80
+        slug:
+          type: string
+          maxLength: 80
+          pattern: ^[-a-zA-Z0-9_]+$
       required:
       - id
       - name
+      - slug
     Customer:
       type: object
       properties:
@@ -765,26 +767,34 @@ components:
           readOnly: true
         user:
           type: integer
+          readOnly: true
         username:
           type: string
           readOnly: true
-        level:
-          allOf:
-          - $ref: '#/components/schemas/LevelEnum'
+        email:
+          type: string
+          format: email
           readOnly: true
+        phone:
+          type: string
+          maxLength: 20
+        address:
+          type: string
       required:
+      - email
       - id
-      - level
       - user
       - username
-    LevelEnum:
+    MethodEnum:
       enum:
-      - REG
-      - PRM
+      - card
+      - mbway
+      - transfer
       type: string
       description: |-
-        * `REG` - Regular
-        * `PRM` - Premium
+        * `card` - Card
+        * `mbway` - MB WAY
+        * `transfer` - Bank transfer
     Order:
       type: object
       properties:
@@ -793,14 +803,12 @@ components:
           readOnly: true
         customer:
           type: integer
-        created_at:
+        customer_name:
           type: string
-          format: date-time
           readOnly: true
-        total_amount:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
           readOnly: true
         items:
           type: array
@@ -810,21 +818,28 @@ components:
         total:
           type: string
           format: decimal
-          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
           readOnly: true
       required:
       - created_at
       - customer
+      - customer_name
       - id
       - items
+      - status
       - total
-      - total_amount
     OrderItem:
       type: object
       properties:
         id:
           type: integer
           readOnly: true
+        order:
+          type: integer
         product:
           type: integer
         product_name:
@@ -839,10 +854,18 @@ components:
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
           readOnly: true
+        line_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
       required:
       - id
+      - line_total
+      - order
       - product
       - product_name
+      - quantity
       - unit_price
     PaginatedCategoryList:
       type: object
@@ -890,6 +913,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Customer'
+    PaginatedOrderItemList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
     PaginatedOrderList:
       type: object
       required:
@@ -913,6 +959,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Order'
+    PaginatedPaymentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Payment'
     PaginatedProductList:
       type: object
       required:
@@ -936,21 +1005,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Product'
-    PatchedCustomer:
-      type: object
-      properties:
-        id:
-          type: integer
-          readOnly: true
-        user:
-          type: integer
-        username:
-          type: string
-          readOnly: true
-        level:
-          allOf:
-          - $ref: '#/components/schemas/LevelEnum'
-          readOnly: true
     PatchedOrder:
       type: object
       properties:
@@ -959,14 +1013,12 @@ components:
           readOnly: true
         customer:
           type: integer
-        created_at:
+        customer_name:
           type: string
-          format: date-time
           readOnly: true
-        total_amount:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
           readOnly: true
         items:
           type: array
@@ -976,7 +1028,38 @@ components:
         total:
           type: string
           format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedOrderItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        order:
+          type: integer
+        product:
+          type: integer
+        product_name:
+          type: string
+          readOnly: true
+        quantity:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        unit_price:
+          type: string
+          format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        line_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
           readOnly: true
     PatchedProduct:
       type: object
@@ -984,39 +1067,106 @@ components:
         id:
           type: integer
           readOnly: true
+        sku:
+          type: string
+          maxLength: 32
         name:
           type: string
-          maxLength: 200
+          maxLength: 120
         category:
           type: integer
+        category_name:
+          type: string
+          readOnly: true
         price:
           type: string
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-        attributes:
-          description: Especificações variáveis como cor, tamanho ou voltagem.
+        stock:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        attributes: {}
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    Payment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        order:
+          type: integer
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        method:
+          $ref: '#/components/schemas/MethodEnum'
+        paid_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - amount
+      - id
+      - order
+      - paid_at
     Product:
       type: object
       properties:
         id:
           type: integer
           readOnly: true
+        sku:
+          type: string
+          maxLength: 32
         name:
           type: string
-          maxLength: 200
+          maxLength: 120
         category:
           type: integer
+        category_name:
+          type: string
+          readOnly: true
         price:
           type: string
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-        attributes:
-          description: Especificações variáveis como cor, tamanho ou voltagem.
+        stock:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        attributes: {}
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
       required:
       - category
+      - category_name
+      - created_at
       - id
       - name
       - price
+      - sku
+    StatusEnum:
+      enum:
+      - pending
+      - paid
+      - cancelled
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `paid` - Paid
+        * `cancelled` - Cancelled
   securitySchemes:
     basicAuth:
       type: http

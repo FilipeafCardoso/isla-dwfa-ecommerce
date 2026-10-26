@@ -1,5 +1,8 @@
 # Decisões · Decisions
 
+PT: uma linha por decisão — o quê, porquê, alternativa rejeitada. Cresce ficha a ficha; o M1/M2/M3 avaliam este ficheiro.
+EN: one line per decision — what, why, rejected alternative. Grows ficha by ficha; M1/M2/M3 grade this file.
+
 ## Esqueleto · Skeleton
 
 - **`AUTH_USER_MODEL = "accounts.User"` desde o dia zero** — trocar depois da primeira migração obriga a reescrever o histórico; um `AbstractUser` vazio não custa nada. · Declared on day zero; swapping later means rewriting migration history; an empty `AbstractUser` is free.
@@ -8,16 +11,16 @@
 
 ## Ficha 02 — modelos · models
 
-1. **Uso de JSONField (Produto):** Utilizou-se o `JSONField` no modelo `Product` (`attributes`) porque, num e-commerce, os produtos variam drasticamente nas suas características (ex: roupa precisa de tamanho/cor, tecnologia precisa de RAM/Voltagem). O JSON evita a criação de inúmeras colunas nulas na base de dados para atributos que só pertencem a certas categorias.
-
-2. **Decisão de `on_delete` (OrderItem -> Product):** Utilizou-se o `models.RESTRICT` na chave estrangeira que liga a linha de encomenda ao produto. Isto garante o histórico financeiro, impedindo que um administrador apague acidentalmente do sistema um produto que já foi faturado numa encomenda.
-
-3. **Decisão de Constraint (OrderItem):** Criou-se uma `UniqueConstraint` nos campos `order` e `product`. O objetivo é impedir que o mesmo produto seja registado duas vezes em linhas diferentes da mesma encomenda; a nível de lógica de negócio, deve-se antes incrementar a quantidade (`quantity`) na linha já existente.
-
+- **`Order.customer` com `on_delete=PROTECT`** (e `Product.category`, `OrderItem.product`) — uma encomenda é um registo contabilístico e não desaparece com o cliente; só `OrderItem.order` e `Payment.order` são CASCADE porque não existem sem a encomenda. Rejeitado: CASCADE em tudo, que apagaria histórico de vendas. · An order is an accounting record; only lines and payments cascade. Rejected: CASCADE everywhere, which would delete sales history.
+- **`UniqueConstraint(order, product)` em `OrderItem`** — o mesmo produto duas vezes na mesma encomenda é um erro de cliente; a constraint apanha-o em todos os caminhos de escrita (admin, shell, serializer). Mais `CheckConstraint` em `quantity > 0`, `price >= 0`, `amount > 0`. · Same product twice in an order is a client error; the DB catches it on every write path.
+- **JSONB sim, em `Product.attributes`** — atributos variam por categoria (cor, tamanho, voltagem) e não são filtrados nesta fase; uma tabela EAV ou colunas por categoria seriam mais caras para nenhum ganho. Sem `GinIndex` até haver uma query que o justifique (Aula 09). · Per-category attributes with no fixed schema; EAV or per-category columns rejected; no GIN index until a query needs it.
+- **Índice composto `(customer, created_at)` em `Order`** — a listagem "as minhas encomendas, mais recentes primeiro" é a query mais frequente da loja. · The most frequent shop query is "my orders, newest first".
 
 ## Ficha 02 — API
 
-1. **Campo só de leitura:** O campo `unit_price` no `OrderItemSerializer` foi definido como *read_only* para garantir que o cliente não manipula o preço cobrado no momento da compra.
-2. **Classe de paginação:** Optámos pela `PageNumberPagination` (configurada no base.py) porque é suficiente para navegação padrão em interfaces web, permitindo saltar diretamente para páginas específicas.
-3. **Estratégia de versionamento:** O versionamento foi incluído diretamente no path do URL (`/api/v1/`) através do router, garantindo clareza e retrocompatibilidade em futuras versões.
-4. **Queries sem N+1 (Teste):** Com o `prefetch_related` e o `select_related`, o endpoint de lista das encomendas necessita apenas de 3 queries.
+- **`unit_price`, `total`, `status`, `created_at` só de leitura** — o preço é copiado do produto no servidor (`OrderItemSerializer.create`), o total vem de `annotate`, o estado só muda por `pay`/`cancel`; nada disto vem do cliente. · Price copied on the server, total annotated, status only via actions; none of it comes from the client.
+- **`PageNumberPagination`, `PAGE_SIZE = 20`** — simples e suficiente para catálogos pequenos; `CursorPagination` quando a tabela de encomendas crescer e `?page=500` começar a custar (candidato a tema do trabalho de investigação). · Simple and enough for a small catalogue; cursor pagination when offset pages get expensive.
+- **Versionamento por URL (`/api/v1/`)** — visível, cacheável, fácil de rotear no Nginx; rejeitado o versionamento por cabeçalho `Accept`, mais "correto" mas invisível no browser e no Swagger. · URL versioning is visible and routable; header versioning rejected as invisible in the browser and Swagger.
+- **Queries na lista de encomendas: 82 sem `prefetch_related`, 3 com** (25 encomendas × 3 linhas: `COUNT` + encomendas com JOIN de cliente/utilizador + linhas com JOIN de produto). O teste `test_order_list_is_paginated_without_n_plus_one` falha no dia em que alguém remover o prefetch. · 82 queries without the prefetch, 3 with it; the test fails the day someone removes it.
+- **Erros no formato Problem Details (RFC 9457)** via `EXCEPTION_HANDLER` — um só envelope (`type`, `title`, `status`, `errors`) para 400/404/409/429; o que não é exceção DRF continua a ser 500, um bug a registar. · One error envelope for every DRF error; non-DRF exceptions stay 500.
+- **`pay` e `cancel` em `services.py` com `select_for_update`** — a transição de estado corre numa transação com bloqueio de linha; dois `POST /pay/` concorrentes não pagam duas vezes. A vista só traduz a exceção `Conflict` em 409. · State transitions lock the row; the view only maps `Conflict` to 409.

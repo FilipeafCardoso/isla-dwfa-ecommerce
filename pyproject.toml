@@ -1,16 +1,16 @@
 [project]
 name = "isla-dwfa-ecommerce"
-version = "0.1.0"
-description = "DWFA 2026/27 · esqueleto do projeto e-commerce · e-commerce project skeleton"
+version = "0.2.0"
+description = "DWFA 2026/27 · Ficha 02 — solução de referência · reference solution"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "django>=5.2,<5.3",
     "django-environ>=0.14.0",
-    "django-filter>=26.2",
-    "djangorestframework>=3.18.3",
-    "drf-spectacular>=0.30.0",
     "psycopg[binary]>=3.2",
+    "djangorestframework>=3.16",
+    "django-filter>=25.1",
+    "drf-spectacular>=0.28",
 ]
 
 [dependency-groups]
