@@ -56,3 +56,14 @@ Decisões:
 - `customer`, `status` e `total` são só de leitura no OrderSerializer.
 - **check --deploy:** corrido com uma SECRET_KEY gerada (`secrets.token_urlsafe(50)`); 
 em produção a chave vem do ambiente.
+
+## Ficha 03 — Sem o filtro do get_queryset
+
+Com `return qs.filter(customer__user=...)` comentado, falharam 3 testes:
+- `test_list_orders_by_role[customer-200-1]`: o cliente viu 2 encomendas em vez de 1;
+a listagem não passa pelo has_object_permission, só o queryset a protege.
+- `test_foreign_order_is_404_for_customer[get]` e `[pay]`: 403 em vez de 404 — o
+  IsOwnerOrGestor ainda bloqueou o acesso, mas o 403 revela que a encomenda existe.
+
+Conclusão: o queryset filtrado protege a listagem e esconde a existência
+(404); has_object_permission funciona como segunda linha de defesa.
