@@ -5,9 +5,14 @@ from decimal import Decimal
 import pytest
 from django.conf import settings
 from rest_framework.test import APIClient
-from shop.factories import CustomerFactory, OrderFactory, OrderItemFactory, ProductFactory
 
-from shop.factories import CategoryFactory, OrderFactory, OrderItemFactory, ProductFactory
+from shop.factories import (
+    CategoryFactory,
+    CustomerFactory,
+    OrderFactory,
+    OrderItemFactory,
+    ProductFactory,
+)
 
 PAGE_SIZE = settings.REST_FRAMEWORK["PAGE_SIZE"]
 
@@ -30,7 +35,7 @@ def test_create_and_validate_order_item():
     product = ProductFactory(stock=3, price=Decimal("9.90"))
     order = OrderFactory()
     api = APIClient()
-    api.force_authenticate(user=order.customer.user)  #Autenticação
+    api.force_authenticate(user=order.customer.user)  # Autenticação
 
     r = api.post("/api/v1/order-items/", {"order": order.id, "product": product.id, "quantity": 2})
     assert r.status_code == 201
@@ -51,7 +56,7 @@ def test_order_list_is_paginated_without_n_plus_one(django_assert_max_num_querie
     for order in OrderFactory.create_batch(25, customer=customer):
         OrderItemFactory.create_batch(3, order=order)
     api = APIClient()
-    api.force_authenticate(user=customer.user)  #Dono das 25 encomendas
+    api.force_authenticate(user=customer.user)  # Dono das 25 encomendas
     with django_assert_max_num_queries(
         4
     ):  # is_gestor (grupos) + count + orders (JOIN customer/user) + items (JOIN product)

@@ -21,7 +21,7 @@ EN: one line per decision — what, why, rejected alternative. Grows ficha by fi
 - **`unit_price`, `total`, `status`, `created_at` só de leitura** — o preço é copiado do produto no servidor (`OrderItemSerializer.create`), o total vem de `annotate`, o estado só muda por `pay`/`cancel`; nada disto vem do cliente. · Price copied on the server, total annotated, status only via actions; none of it comes from the client.
 - **`PageNumberPagination`, `PAGE_SIZE = 20`** — simples e suficiente para catálogos pequenos; `CursorPagination` quando a tabela de encomendas crescer e `?page=500` começar a custar (candidato a tema do trabalho de investigação). · Simple and enough for a small catalogue; cursor pagination when offset pages get expensive.
 - **Versionamento por URL (`/api/v1/`)** — visível, cacheável, fácil de rotear no Nginx; rejeitado o versionamento por cabeçalho `Accept`, mais "correto" mas invisível no browser e no Swagger. · URL versioning is visible and routable; header versioning rejected as invisible in the browser and Swagger.
-- **Queries na lista de encomendas: 82 sem `prefetch_related`, 3 com** (25 encomendas × 3 linhas: `COUNT` + encomendas com JOIN de cliente/utilizador + linhas com JOIN de produto). O teste `test_order_list_is_paginated_without_n_plus_one` falha no dia em que alguém remover o prefetch. · 82 queries without the prefetch, 3 with it; the test fails the day someone removes it.
+- **Queries na lista de encomendas: 82 sem `prefetch_related`, 4 com** (25 encomendas × 3 linhas: `COUNT` + encomendas com JOIN de cliente/utilizador + linhas com JOIN de produto + 1 do `is_gestor()` aos grupos, acrescentada na Ficha 03). O teste `test_order_list_is_paginated_without_n_plus_one` falha no dia em que alguém remover o prefetch. · 82 queries without the prefetch, 4 with it (+1 group lookup since Ficha 03); the test fails the day someone removes it.
 - **Erros no formato Problem Details (RFC 9457)** via `EXCEPTION_HANDLER` — um só envelope (`type`, `title`, `status`, `errors`) para 400/404/409/429; o que não é exceção DRF continua a ser 500, um bug a registar. · One error envelope for every DRF error; non-DRF exceptions stay 500.
 - **`pay` e `cancel` em `services.py` com `select_for_update`** — a transição de estado corre numa transação com bloqueio de linha; dois `POST /pay/` concorrentes não pagam duas vezes. A vista só traduz a exceção `Conflict` em 409. · State transitions lock the row; the view only maps `Conflict` to 409.
 
@@ -49,6 +49,14 @@ EN: one line per decision — what, why, rejected alternative. Grows ficha by fi
 | GET /order-items/ | 401 | 200 (só das suas encomendas) | 200 (todas) |
 | POST /order-items/ (encomenda alheia) | 401 | 404 | 201 |
 | GET /payments/ | 401 | 200 (só das suas encomendas) | 200 (todos) |
+| POST /auth/token/ (11.ª tentativa no mesmo minuto) | 429 | 429 | 429 |
+| POST /auth/token/refresh/ | 200 (refresh válido) / 401 (inválido ou na blacklist) | 200 | 200 |
+| PUT /products/{id}/ | 401 | 403 | 200 |
+| PATCH / DELETE /orders/{id}/ (própria) | 401 | 200 / 204 | 200 / 204 |
+| POST /orders/{id}/cancel/ (própria, pendente) | 401 | 200 | 200 |
+| GET / PATCH / DELETE /order-items/{id}/ (alheio) | 401 | 404 | 200 / 204 |
+| POST /order-items/ (encomenda própria) | 401 | 201 | 201 |
+| GET /payments/{id}/ (alheio) | 401 | 404 | 200 |
 
 Decisões:
 - Catálogo (categorias e produtos) com leitura pública ("toda a gente lê").
@@ -65,5 +73,33 @@ a listagem não passa pelo has_object_permission, só o queryset a protege.
 - `test_foreign_order_is_404_for_customer[get]` e `[pay]`: 403 em vez de 404 — o
   IsOwnerOrGestor ainda bloqueou o acesso, mas o 403 revela que a encomenda existe.
 
+## Ficha 03 — Tokens JWT
+
+- **Tempos de vida:** access 30 min, refresh 1 dia, com `ROTATE_REFRESH_TOKENS` e
+  `BLACKLIST_AFTER_ROTATION`: cada refresh devolve um par novo e invalida o anterior,
+  por isso um refresh roubado só serve uma vez. O access curto limita a janela de
+  abuso se for intercetado.
+- **Onde a SPA guarda os tokens:** em memória, não em localStorage — o localStorage é 
+  legível por qualquer script da página, logo fica exposto a XSS. 
+  O custo é perder a sessão ao recarregar a página (novo login).
+  Alternativa mais robusta para o futuro: refresh num cookie HttpOnly + Secure +
+  SameSite, que o JavaScript não consegue ler (exige uma vista própria e proteção CSRF).
+
 Conclusão: o queryset filtrado protege a listagem e esconde a existência
 (404); has_object_permission funciona como segunda linha de defesa.
+
+
+## Ficha 03 — Decisões
+
+- **Leitura pública do catálogo:** `IsGestorOrReadOnly` devolve `True` em
+  SAFE_METHODS. Desvio intencional ao código de exemplo do enunciado (que exigia
+  login para ler), para cumprir "toda a gente lê" e manter a montra da SPA sem login.
+- **check --deploy:** com `SECRET_KEY=x` o Django emite `security.W009` (chave curta
+  e previsível), e com razão. Validado com uma chave gerada
+  (`secrets.token_urlsafe(50)`) → 0 issues. Em produção a chave vem só do ambiente.
+- **Filtro também em Customer, OrderItem e Payment:** expunham dados de outros
+  clientes; aplicado o mesmo padrão (gestor vê tudo, cliente só os seus → 404).
+- **MeSerializer:** documenta a resposta de `/me/` no Swagger e elimina o aviso
+  `drf_spectacular.W002` do check.
+- **Migrações da blacklist:** vêm do pacote `djangorestframework-simplejwt`
+  (versão fixada no `uv.lock`); a migração própria commitada é a do grupo `gestores`.

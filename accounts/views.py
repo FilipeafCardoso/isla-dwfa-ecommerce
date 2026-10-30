@@ -22,11 +22,13 @@ class MeView(APIView):
     @extend_schema(responses=MeSerializer)
     def get(self, request):
         user = request.user
-        return Response({
-            "id": user.id,
-            "username": user.username,
-            "groups": list(user.groups.values_list("name", flat=True)),
-        })
+        return Response(
+            {
+                "id": user.id,
+                "username": user.username,
+                "groups": list(user.groups.values_list("name", flat=True)),
+            }
+        )
 
 
 class ThrottledTokenObtainPairView(TokenObtainPairView):

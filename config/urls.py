@@ -1,13 +1,10 @@
 from django.contrib import admin
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
-
-from core.views import health
 from rest_framework_simplejwt.views import TokenRefreshView
-from accounts.views import MeView
 
 from accounts.views import MeView, ThrottledTokenObtainPairView
-from rest_framework_simplejwt.views import TokenRefreshView
+from core.views import health
 
 urlpatterns = [
     path("admin/", admin.site.urls),

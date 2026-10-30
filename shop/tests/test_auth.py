@@ -1,17 +1,16 @@
 # shop/tests/test_auth.py
 import pytest
+from django.contrib.auth.models import Group
 from rest_framework.test import APIClient
 
 from accounts.factories import UserFactory
-
-from django.contrib.auth.models import Group
-
 from shop.factories import CategoryFactory, CustomerFactory, OrderFactory, OrderItemFactory
 
 PASSWORD = "uma-password-bem-longa-123"
 
 
 # Autenticação JWT
+
 
 @pytest.mark.django_db
 def test_orders_without_token_is_401():

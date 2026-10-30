@@ -70,7 +70,8 @@ class OrderViewSet(viewsets.ModelViewSet):
         "-created_at"
     ]  # explícito: annotate() perde o Meta.ordering · annotate() drops Meta.ordering
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
-    # Camada 2: has_object_permission em retrieve, update, destroy e ações detail=True (pay, cancel).
+    # Camada 2: has_object_permission em retrieve, update, destroy
+    # e ações detail=True (pay, cancel).
     permission_classes = [IsAuthenticated, IsOwnerOrGestor]
 
     def get_queryset(self):
@@ -93,7 +94,9 @@ class OrderViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         customer = Customer.objects.filter(user=self.request.user).first()
         if customer is None:
-            raise ValidationError({"customer": ["O utilizador autenticado não tem perfil de cliente."]})
+            raise ValidationError(
+                {"customer": ["O utilizador autenticado não tem perfil de cliente."]}
+            )
         serializer.save(customer=customer)
 
     @extend_schema(
