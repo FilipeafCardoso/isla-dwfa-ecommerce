@@ -24,3 +24,33 @@ EN: one line per decision — what, why, rejected alternative. Grows ficha by fi
 - **Queries na lista de encomendas: 82 sem `prefetch_related`, 3 com** (25 encomendas × 3 linhas: `COUNT` + encomendas com JOIN de cliente/utilizador + linhas com JOIN de produto). O teste `test_order_list_is_paginated_without_n_plus_one` falha no dia em que alguém remover o prefetch. · 82 queries without the prefetch, 3 with it; the test fails the day someone removes it.
 - **Erros no formato Problem Details (RFC 9457)** via `EXCEPTION_HANDLER` — um só envelope (`type`, `title`, `status`, `errors`) para 400/404/409/429; o que não é exceção DRF continua a ser 500, um bug a registar. · One error envelope for every DRF error; non-DRF exceptions stay 500.
 - **`pay` e `cancel` em `services.py` com `select_for_update`** — a transição de estado corre numa transação com bloqueio de linha; dois `POST /pay/` concorrentes não pagam duas vezes. A vista só traduz a exceção `Conflict` em 409. · State transitions lock the row; the view only maps `Conflict` to 409.
+
+## Ficha 03 — Matriz de autorização (endpoint × papel)
+
+| Endpoint | Anónimo | Cliente | Gestor |
+|---|---|---|---|
+| POST /auth/token/ | 200 (credenciais válidas) / 401 | 200 | 200 |
+| GET /me/ | 401 | 200 | 200 |
+| GET /categories/, /categories/{id}/ | 200 | 200 | 200 |
+| GET /products/, /products/{id}/ | 200 | 200 | 200 |
+| POST /products/ | 401 | 403 | 201 |
+| PATCH /products/{id}/ | 401 | 403 | 200 |
+| DELETE /products/{id}/ | 401 | 403 | 204 |
+| GET /customers/ | 401 | 200 (só o seu) | 200 (todos) |
+| GET /customers/{id}/ (alheio) | 401 | 404 | 200 |
+| GET /orders/ | 401 | 200 (só as suas) | 200 (todas) |
+| GET /orders/{id}/ (própria) | 401 | 200 | 200 |
+| GET /orders/{id}/ (alheia) | 401 | 404 | 200 |
+| POST /orders/ | 401 | 201 (customer = request.user) | 400 (sem perfil de cliente) |
+| PATCH / DELETE /orders/{id}/ (alheia) | 401 | 404 | 200 / 204 |
+| POST /orders/{id}/pay/ (própria, pendente) | 401 | 200 | 200 |
+| POST /orders/{id}/pay/ (alheia) | 401 | 404 | 200 |
+| POST /orders/{id}/cancel/ (alheia) | 401 | 404 | 200 |
+| GET /order-items/ | 401 | 200 (só das suas encomendas) | 200 (todas) |
+| POST /order-items/ (encomenda alheia) | 401 | 404 | 201 |
+| GET /payments/ | 401 | 200 (só das suas encomendas) | 200 (todos) |
+
+Decisões:
+- Catálogo (categorias e produtos) com leitura pública ("toda a gente lê").
+- Recurso alheio → 404 e não 403: não se confirma que existe.
+- `customer`, `status` e `total` são só de leitura no OrderSerializer.

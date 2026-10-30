@@ -80,7 +80,9 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = ["id", "customer", "customer_name", "status", "items", "total", "created_at"]
-        read_only_fields = ["status", "created_at"]
+        # customer vem de request.user (perform_create); status só muda via pay/cancel;
+        # total é calculado (annotate).
+        read_only_fields = ["customer", "status", "total", "created_at"]
 
 
 class PaymentSerializer(serializers.ModelSerializer):

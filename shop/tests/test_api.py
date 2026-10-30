@@ -53,8 +53,8 @@ def test_order_list_is_paginated_without_n_plus_one(django_assert_max_num_querie
     api = APIClient()
     api.force_authenticate(user=customer.user)  #Dono das 25 encomendas
     with django_assert_max_num_queries(
-        3
-    ):  # count + orders (JOIN customer/user) + items (JOIN product)
+        4
+    ):  # is_gestor (grupos) + count + orders (JOIN customer/user) + items (JOIN product)
         response = api.get("/api/v1/orders/")
     assert response.status_code == 200
 
