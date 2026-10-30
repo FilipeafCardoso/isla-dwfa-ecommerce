@@ -26,18 +26,21 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    # terceiros · third party (Ficha 02)
+    # terceiros · third party
     "rest_framework",
     "django_filters",
     "drf_spectacular",
+    "rest_framework_simplejwt.token_blacklist",
+    "corsheaders",
     # apps do projeto · project apps
     "accounts",
     "core",
     "shop",
-    "rest_framework_simplejwt.token_blacklist",
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.security.SecurityMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -46,6 +49,9 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=["http://localhost:5173"])
+CORS_URLS_REGEX = r"^/api/.*$"
 
 ROOT_URLCONF = "config.urls"
 
@@ -77,6 +83,10 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+    {
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "OPTIONS": {"min_length": 12},
+    },
 ]
 
 LANGUAGE_CODE = "en-us"
@@ -106,6 +116,9 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "EXCEPTION_HANDLER": "shop.api.problem_details_handler",
+    "DEFAULT_THROTTLE_RATES": {
+        "auth": "10/minute",
+    },
 }
 
 SPECTACULAR_SETTINGS = {
@@ -122,3 +135,10 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": True,
     "UPDATE_LAST_LOGIN": True,
 }
+
+# Argon2 primeiro (hashes novos); PBKDF2 segundo — os hashes antigos continuam
+# válidos e são migrados para Argon2 no próximo login.
+PASSWORD_HASHERS = [
+    "django.contrib.auth.hashers.Argon2PasswordHasher",
+    "django.contrib.auth.hashers.PBKDF2PasswordHasher",
+]

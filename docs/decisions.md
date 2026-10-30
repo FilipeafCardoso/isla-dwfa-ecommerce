@@ -54,3 +54,5 @@ Decisões:
 - Catálogo (categorias e produtos) com leitura pública ("toda a gente lê").
 - Recurso alheio → 404 e não 403: não se confirma que existe.
 - `customer`, `status` e `total` são só de leitura no OrderSerializer.
+- **check --deploy:** corrido com uma SECRET_KEY gerada (`secrets.token_urlsafe(50)`); 
+em produção a chave vem do ambiente.
