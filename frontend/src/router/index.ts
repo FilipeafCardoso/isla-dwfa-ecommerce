@@ -1,9 +1,11 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import ProductsView from '@/views/ProductsView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    // as rotas de produtos entram no passo 3
+    { path: '/', redirect: { name: 'products' } },
+    { path: '/products', name: 'products', component: ProductsView },
   ],
 })
 
