@@ -103,3 +103,22 @@ Conclusão: o queryset filtrado protege a listagem e esconde a existência
   `drf_spectacular.W002` do check.
 - **Migrações da blacklist:** vêm do pacote `djangorestframework-simplejwt`
   (versão fixada no `uv.lock`); a migração própria commitada é a do grupo `gestores`.
+
+
+  ## Ficha 04 — SPA (parte 1)
+
+- **`frontend/` no mesmo repositório da API:** a SPA e o Django mudam juntos (o tipo
+  é o contrato com a API) e o M2 entrega SPA, CI e Docker num só repositório.
+- **CORS em vez do proxy do Vite:** a SPA chama `http://localhost:8000` diretamente e
+  o Django autoriza a origem `http://localhost:5173` (Ficha 03). Com o proxy, o
+  browser veria uma só origem e o CORS deixava de ser exercitado em dev — e em
+  produção as origens vão ser diferentes de qualquer forma.
+- **O URL como estado da lista:** `?search=` e `?page=` vivem em `route.query` (um
+  `computed` com get/set), não num `ref`. Recarregar, voltar atrás ou partilhar o
+  link mantém a pesquisa e a página.
+- **Rota do detalhe lazy:** `component: () => import(...)` gera um chunk à parte
+  (`ProductView-<hash>.js`, ~1 kB); quem só vê a lista não descarrega o código do
+  detalhe.
+- **`useFetch` ignora respostas antigas:** cada pedido tem um número e só o mais
+  recente atualiza os dados, para que uma pesquisa rápida não mostre os resultados
+  de uma pesquisa anterior.

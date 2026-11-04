@@ -1,54 +1,54 @@
-# frontend
+# Frontend — ISLA Shop (SPA)
 
-This template should help get you started developing with Vue 3 in Vite.
+SPA em Vue 3 + TypeScript + Vite, cliente da API Django deste repositório
 
-## Recommended IDE Setup
+## Como correr
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+1. **API** (na raiz do repositório):
 
-## Recommended Browser Setup
+   ```bash
+   docker compose up -d
+   uv run manage.py migrate
+   uv run manage.py seed
+   uv run manage.py runserver        # http://localhost:8000
+   ```
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+2. **SPA** (nesta pasta, `frontend/`):
 
-## Type Support for `.vue` Imports in TS
+   ```bash
+   cp .env.example .env              # VITE_API_URL=http://localhost:8000
+   npm install
+   npm run dev                       # http://localhost:5173
+   ```
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
+   O Vite só lê o `.env` ao arrancar: depois de o alterar, reiniciar o `npm run dev`.
 
-## Customize configuration
+## Comandos
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+| Comando | O que faz |
+|---|---|
+| `npm run dev` | servidor de desenvolvimento |
+| `npm run type-check` | `vue-tsc`: zero erros de tipos |
+| `npm run lint` | oxlint + ESLint |
+| `npm run build` | build de produção em `dist/` |
+| `npm run test:unit -- --run` | testes Vitest (sem `--run` fica em modo watch) |
 
-## Project Setup
+## O que está cá
 
-```sh
-npm install
-```
+- `src/types.ts` — tipos da API: `Category`, `Product` (`price` é string), `Paginated<T>`, `Problem`
+- `src/api/client.ts` — `get<T>(path, query?)` sobre `fetch`, com `ApiError` (Problem Details)
+- `src/composables/useFetch.ts` — os três estados (a carregar · erro · dados) + `reload`
+- `src/views/ProductsView.vue` — lista com pesquisa e paginação no URL (`?search=`, `?page=`)
+- `src/views/ProductView.vue` — detalhe do produto (rota lazy), com os `attributes` num `<dl>`
+- `src/views/NotFoundView.vue` — página do catch-all
+- `src/components/ProductCard.vue` — cartão de produto, emite `select` com o id
+- `src/components/__tests__/` — testes Vitest
 
-### Compile and Hot-Reload for Development
+## Rotas
 
-```sh
-npm run dev
-```
-
-### Type-Check, Compile and Minify for Production
-
-```sh
-npm run build
-```
-
-### Run Unit Tests with [Vitest](https://vitest.dev/)
-
-```sh
-npm run test:unit
-```
-
-### Lint with [ESLint](https://eslint.org/)
-
-```sh
-npm run lint
-```
+| Rota | Vista |
+|---|---|
+| `/` | redireciona para `/products` |
+| `/products` | lista |
+| `/products/:id` | detalhe (só ids numéricos) |
+| qualquer outra | `NotFoundView` |
