@@ -1,23 +1,16 @@
-// Contrato com a API
+// Contrato com a API: aliases dos tipos gerados (src/api/schema.d.ts)
+import type { components } from '@/api/schema'
 
-export interface Category {
-  id: number
-  name: string
-}
+type Schemas = components['schemas']
 
-export interface Product {
-  id: number
-  sku: string
-  name: string
-  category: number
-  category_name: string
-  price: string
-  stock: number
-  /* chaves e valores livres, definidos por produto. */
-  attributes: Record<string, unknown>
-  is_active: boolean
-  created_at: string
-}
+export type Category = Schemas['Category']
+// Sem estreitamentos: o hook shop.schema.require_response_fields já marca todos os campos
+// da resposta como obrigatórios (ex.: stock, que tem default no modelo).
+export type Product = Schemas['Product']
+export type Order = Schemas['Order']
+export type OrderItem = Schemas['OrderItem']
+export type OrderStatus = Schemas['StatusEnum']
+export type Me = Schemas['Me']
 
 /* Envelope do PageNumberPagination do DRF. */
 export interface Paginated<T> {
@@ -27,7 +20,7 @@ export interface Paginated<T> {
   results: T[]
 }
 
-/* Corpo de erro da API */
+/* Corpo de erro da API (Problem Details; não está no schema) */
 export interface Problem {
   type: string
   title: string

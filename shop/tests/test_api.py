@@ -90,3 +90,13 @@ def test_openapi_schema_lists_the_action():
     assert "/api/v1/orders/{id}/pay/" in r.content.decode()
     CategoryFactory()
     assert APIClient().get("/api/docs/").status_code == 200
+
+
+@pytest.mark.django_db
+def test_openapi_response_fields_are_required():
+    # Ficha 04: campos com default (stock) obrigatórios na resposta, opcionais no pedido
+    r = APIClient().get("/api/schema/", HTTP_ACCEPT="application/vnd.oai.openapi+json")
+    schemas = r.json()["components"]["schemas"]
+    assert "stock" in schemas["Product"]["required"]
+    assert "stock" not in schemas["ProductRequest"]["required"]
+    assert "next" in schemas["PaginatedProductList"]["required"]

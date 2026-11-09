@@ -1,17 +1,28 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
-import { get } from '@/api/client'
+import { api, unwrap } from '@/api/client'
 import { useFetch } from '@/composables/useFetch'
-import type { Product } from '@/types'
 
 // true na rota -> o :id do URL chega aqui como prop (sempre string)
 const props = defineProps<{ id: string }>()
 
+// props.id lido de forma síncrona dentro do fetcher: o watchEffect segue-o
 const {
   data: product,
   status,
   error,
-} = useFetch<Product>(() => get<Product>(`/api/v1/products/${props.id}/`))
+} = useFetch(() =>
+  unwrap(api.GET('/api/v1/products/{id}/', { params: { path: { id: Number(props.id) } } })),
+)
+
+// JSONField sai como `unknown` no schema: só se mostra se for um objeto
+const attributes = computed((): Record<string, unknown> => {
+  const value: unknown = product.value?.attributes
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? Object.fromEntries(Object.entries(value))
+    : {}
+})
 </script>
 
 <template>
@@ -26,8 +37,8 @@ const {
       <p class="price">{{ product.price }} €</p>
       <p>Stock: {{ product.stock }}</p>
 
-      <dl v-if="Object.keys(product.attributes).length">
-        <template v-for="(value, key) in product.attributes" :key="key">
+      <dl v-if="Object.keys(attributes).length">
+        <template v-for="(value, key) in attributes" :key="key">
           <dt>{{ key }}</dt>
           <dd>{{ value }}</dd>
         </template>

@@ -120,9 +120,17 @@ REST_FRAMEWORK = {
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "ISLA DWFA e-commerce API",
-    "DESCRIPTION": "Ficha 02 — domínio e-commerce exposto com Django REST Framework",
-    "VERSION": "0.2.0",
+    "DESCRIPTION": "Ficha 04 — API e-commerce (DRF + JWT) consumida pela SPA Vue",
+    "VERSION": "0.4.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    # Ficha 04: componentes separados para pedido e resposta. Sem isto, campos read_only
+    # (ex.: access/refresh) aparecem como obrigatórios no body e o cliente tipado não compila.
+    "COMPONENT_SPLIT_REQUEST": True,
+    # Ficha 04: campos com default (ex.: stock) não podem sair opcionais na resposta.
+    "POSTPROCESSING_HOOKS": [
+        "drf_spectacular.hooks.postprocess_schema_enums",
+        "shop.schema.require_response_fields",
+    ],
 }
 
 SIMPLE_JWT = {

@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { get } from '@/api/client'
+import { api, unwrap } from '@/api/client'
 import { useFetch } from '@/composables/useFetch'
 import ProductCard from '@/components/ProductCard.vue'
-import type { Paginated, Product } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -25,11 +24,17 @@ function goTo(n: number) {
   router.push({ query: { ...route.query, page: n > 1 ? n : undefined } })
 }
 
-const { data, status, error, reload } = useFetch<Paginated<Product>>(() =>
-  get<Paginated<Product>>('/api/v1/products/', {
-    search: search.value || undefined,
-    page: page.value > 1 ? page.value : undefined,
-  }),
+const { data, status, error, reload } = useFetch(() =>
+  unwrap(
+    api.GET('/api/v1/products/', {
+      params: {
+        query: {
+          search: search.value || undefined,
+          page: page.value > 1 ? page.value : undefined,
+        },
+      },
+    }),
+  ),
 )
 
 function open(id: number) {
