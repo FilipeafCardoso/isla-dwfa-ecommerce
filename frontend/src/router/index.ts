@@ -2,6 +2,12 @@ import { createRouter, createWebHistory } from 'vue-router'
 import ProductsView from '@/views/ProductsView.vue'
 import NotFoundView from '@/views/NotFoundView.vue'
 
+declare module 'vue-router' {
+  interface RouteMeta {
+    requiresAuth?: boolean
+  }
+}
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
