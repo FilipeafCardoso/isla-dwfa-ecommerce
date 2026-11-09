@@ -82,6 +82,7 @@ a listagem não passa pelo has_object_permission, só o queryset a protege.
 - **Onde a SPA guarda os tokens:** em memória, não em localStorage — o localStorage é 
   legível por qualquer script da página, logo fica exposto a XSS. 
   O custo é perder a sessão ao recarregar a página (novo login).
+  *Revisto na Ficha 04: refresh em localStorage (ver "Ficha 04 — SPA (parte 2)").*
   Alternativa mais robusta para o futuro: refresh num cookie HttpOnly + Secure +
   SameSite, que o JavaScript não consegue ler (exige uma vista própria e proteção CSRF).
 
@@ -105,7 +106,7 @@ Conclusão: o queryset filtrado protege a listagem e esconde a existência
   (versão fixada no `uv.lock`); a migração própria commitada é a do grupo `gestores`.
 
 
-  ## Ficha 04 — SPA (parte 1)
+## Ficha 04 — SPA (parte 1)
 
 - **`frontend/` no mesmo repositório da API:** a SPA e o Django mudam juntos (o tipo
   é o contrato com a API) e o M2 entrega SPA, CI e Docker num só repositório.
@@ -122,3 +123,44 @@ Conclusão: o queryset filtrado protege a listagem e esconde a existência
 - **`useFetch` ignora respostas antigas:** cada pedido tem um número e só o mais
   recente atualiza os dados, para que uma pesquisa rápida não mostre os resultados
   de uma pesquisa anterior.
+
+## Ficha 04 — SPA (parte 2)
+
+- **Tokens (revê a Ficha 03):** `access` só em memória (store Pinia); `refresh` em
+  `localStorage` para sobreviver ao F5, rodado a cada uso e com blacklist (um refresh
+  roubado só serve uma vez). Rejeitado o cookie HttpOnly: a API passaria a emitir cookies
+  e a precisar de CSRF outra vez. Rejeitado "só memória": obrigava a novo login a cada F5.
+- **Renovação:** o middleware do openapi-fetch envia `Bearer`; num 401 renova **uma vez** e
+  repete o pedido (um 401 na repetição é definitivo). Uma só renovação em curso
+  (single-flight), porque com rotação + blacklist uma segunda renovação com o mesmo refresh
+  falharia; se a renovação falhar → `logout()` e `/login?next=`.
+- **Tipos gerados do OpenAPI:** `openapi-fetch` + `src/api/schema.d.ts` (`npm run gen:api`),
+  com `types.ts` só com aliases; `COMPONENT_SPLIT_REQUEST: True` na API para separar pedido
+  e resposta (sem isso, campos read_only como `access` apareciam obrigatórios no body).
+- **Campos da resposta obrigatórios no schema:** o hook `shop.schema.require_response_fields`
+  marca todas as propriedades dos componentes de resposta como `required`; o DRF devolve-as
+  sempre, mas `stock`/`is_active` (com default no modelo) e `next`/`previous` saíam
+  opcionais. Rejeitado estreitar em `types.ts` (`Product & { stock: number }`): a resposta
+  do `api.GET` continuava com `stock?` e cada chamada precisaria de um cast.
+- **`overrides` do TypeScript para o `openapi-typescript`:** a 7.x declara
+  `peer typescript@^5.x` e o projeto usa TS 6; o `overrides` em `package.json` aplica-se só
+  a esse pacote (o ficheiro gerado foi verificado). Rejeitado `--legacy-peer-deps`, que
+  desliga a verificação de peers em todas as dependências.
+- **Guard:** protege o ecrã, não os dados — sem token, `GET /api/v1/orders/` continua a
+  devolver 401; a autorização é da API (401/403/404 da Ficha 03).
+- **`next` do login:** só caminhos internos — tem de começar por `/` e não por `//`
+  (`//evil.com` é um URL de outro domínio para o browser).
+- **Erros:** 400 ao lado do campo (`ApiError.field`), 409 como mensagem + recarregar a lista
+  (não é o estado de erro do ecrã), 429 no login como frase.
+- **Dinheiro:** o total do formulário é uma estimativa somada em cêntimos inteiros a partir
+  das strings; o total que conta é o `Decimal` da API (`annotate(Sum(...))`).
+- **Nova encomenda:** `POST /orders/` + um `POST /order-items/` por linha (o
+  `OrderSerializer` não aceita `items` aninhados); ao corrigir erros reutiliza-se a mesma
+  encomenda e só se reenviam as linhas pendentes.
+- **Linhas aceites bloqueadas:** as linhas que já deram 201 ficam desativadas
+  (`<fieldset disabled>`, "✓ Adicionada"), porque já estão gravadas na encomenda e
+  editá-las no formulário não as alteraria na API.
+- **Limitação — encomenda vazia:** se a encomenda for criada mas todas as linhas forem
+  rejeitadas e o utilizador sair, fica uma encomenda `pending` sem linhas; a API recusa
+  pagá-la (409 "has no items"). Rejeitado por agora um endpoint que crie encomenda e linhas
+  numa só transação (escrita aninhada), por sair do âmbito da ficha.
