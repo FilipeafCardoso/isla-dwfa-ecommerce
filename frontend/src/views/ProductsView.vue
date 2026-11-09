@@ -61,12 +61,8 @@ function open(id: number) {
         <ProductCard v-for="p in data.results" :key="p.id" :product="p" @select="open" />
       </div>
       <nav class="pager">
-        <button type="button" :disabled="!data.previous" @click="goTo(page - 1)">
-          ‹ Anterior
-        </button>
-        <button type="button" :disabled="!data.next" @click="goTo(page + 1)">
-          Seguinte ›
-        </button>
+        <button type="button" :disabled="!data.previous" @click="goTo(page - 1)">‹ Anterior</button>
+        <button type="button" :disabled="!data.next" @click="goTo(page + 1)">Seguinte ›</button>
       </nav>
     </template>
   </section>

@@ -25,8 +25,7 @@ export function useFetch<T>(fetcher: () => Promise<T>) {
       },
       (e: unknown) => {
         if (id !== current) return
-        error.value =
-          e instanceof ApiError ? e.message : 'Não foi possível contactar a API.'
+        error.value = e instanceof ApiError ? e.message : 'Não foi possível contactar a API.'
         status.value = 'error'
       },
     )
