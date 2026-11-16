@@ -164,3 +164,35 @@ Conclusão: o queryset filtrado protege a listagem e esconde a existência
   rejeitadas e o utilizador sair, fica uma encomenda `pending` sem linhas; a API recusa
   pagá-la (409 "has no items"). Rejeitado por agora um endpoint que crie encomenda e linhas
   numa só transação (escrita aninhada), por sair do âmbito da ficha.
+
+## Ficha 05 — Tarefas assíncronas
+
+- **Idempotência:** o recibo marca `Payment.receipt_sent_at` numa transação com
+  `select_for_update`; uma segunda entrega (o broker garante *pelo menos uma vez*,
+  `acks_late=True`) vê o campo preenchido e devolve `already-sent` sem reenviar.
+  Limitação: se o worker morrer entre o `send_mail` e o commit, o email pode sair
+  duas vezes.
+- **Retry só no transitório:** `autoretry_for=(ReceiptGatewayError,)` com backoff
+  exponencial e jitter (por isso o log mostra esperas entre 0 e 2 s na 1.ª tentativa);
+  `SMTPException`/`OSError` passam a `ReceiptGatewayError`, e um `DoesNotExist` falha à
+  primeira. Rejeitado `autoretry_for=(Exception,)`: repetia erros que nunca se resolvem.
+- **`on_commit`:** o recibo só é enfileirado depois do commit do `pay` — sem isso o worker
+  podia ler a encomenda antes de estar gravada como paga, ou receber o id de uma transação
+  que fez rollback. A tarefa recebe o id, nunca o objeto (estaria velho no worker).
+- **Dono da tarefa e 404:** o dono fica na cache (Redis, base `/1`, 1 h), gravado **antes**
+  de enfileirar(com um id gerado à partida: se fosse depois do `.delay()`, como no slide 13, 
+  a tarefa podia acabar antes de o dono existir na cache); tarefa alheia ou desconhecida → 404, 
+  a mesma regra das encomendas (não se confirma que existe). O `AsyncResult` sozinho não sabe de 
+  quem é a tarefa. A rota aceita `<str:task_id>` (não `<uuid:>`) para um id inválido dar o mesmo
+   404 em Problem Details.
+- **202 em vez de 200:** a vista só enfileira e responde com `status_url` e `Location`; o
+  trabalho e o progresso (`PROGRESS` com `current`/`total`) vivem no worker e no result
+  backend. Em `FAILURE` a API devolve só o nome da exceção; o traceback fica no log.
+- **Redis por bases:** `/0` broker e resultados, `/1` cache do Django (inclui o throttle do
+  login e o dono das tarefas).
+- **Testes sem Redis:** `CELERY_TASK_ALWAYS_EAGER` + result backend e cache em memória, para
+  o CI correr sem serviços extra; `REPORT_ITEM_DELAY = 0` nos testes.
+- **Import local em `pay_order()`:** `tasks.py` usa `order_total()` de `services.py`; o
+  import de `send_order_receipt` fica dentro da função para evitar o import circular.
+- **Como correr:** `docker compose up -d` · `uv run manage.py runserver` ·
+  `uv run celery -A config worker -l info` (terminal 2).
