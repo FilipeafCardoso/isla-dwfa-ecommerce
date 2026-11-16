@@ -184,7 +184,7 @@ Conclusão: o queryset filtrado protege a listagem e esconde a existência
   a tarefa podia acabar antes de o dono existir na cache); tarefa alheia ou desconhecida → 404, 
   a mesma regra das encomendas (não se confirma que existe). O `AsyncResult` sozinho não sabe de 
   quem é a tarefa. A rota aceita `<str:task_id>` (não `<uuid:>`) para um id inválido dar o mesmo
-   404 em Problem Details.
+  404 em Problem Details.
 - **202 em vez de 200:** a vista só enfileira e responde com `status_url` e `Location`; o
   trabalho e o progresso (`PROGRESS` com `current`/`total`) vivem no worker e no result
   backend. Em `FAILURE` a API devolve só o nome da exceção; o traceback fica no log.
