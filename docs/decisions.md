@@ -196,3 +196,15 @@ Conclusão: o queryset filtrado protege a listagem e esconde a existência
   import de `send_order_receipt` fica dentro da função para evitar o import circular.
 - **Como correr:** `docker compose up -d` · `uv run manage.py runserver` ·
   `uv run celery -A config worker -l info` (terminal 2).
+  
+  ## Ficha 05 — Declaração de uso de IA
+
+- **Planeamento:** preparei com o Claude um plano por fases a partir do
+  enunciado e dos slides da Aula 07 (Parte 1 + Parte 2).
+- **Implementação:** auxiliada pelo Claude e CLaude Code.
+- **Verificação:** testado manualmente o recibo no worker (email na consola, `already-sent`,
+  worker parado com `LLEN celery = 1` e o recibo a sair ao religar) e o relatório com `curl`
+  (202, `PROGRESS` a subir, `SUCCESS`, 404 com o token do bruno); `pytest` (34 testes),
+  `ruff`, `check --deploy` e os quatro comandos da SPA correm limpos. Por fim, foi passada
+  uma checklist ao claude code para verificar ponto a ponto (foi também pedido ao Claude Code,
+  tendo em conta o trabalho realizado, comentários objetivos sobre as novas alterações).

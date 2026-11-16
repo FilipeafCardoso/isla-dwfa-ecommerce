@@ -19,6 +19,7 @@ def paid_order(**user_kwargs):
 
 @pytest.mark.django_db
 def test_receipt_is_idempotent():
+    # Ficha 05: idempotente — 2 entregas da mesma mensagem, 1 só email
     order = paid_order()
     first = send_order_receipt.delay(order.id)
     again = send_order_receipt.delay(order.id)  # 2.ª entrega da mesma mensagem
@@ -31,6 +32,7 @@ def test_receipt_is_idempotent():
 
 @pytest.mark.django_db
 def test_receipt_without_email_is_not_marked():
+    # Sem email não se marca: o recibo ainda pode sair mais tarde
     order = paid_order(email="")
     assert send_order_receipt.delay(order.id).get() == "no-email"
     assert mail.outbox == []
@@ -39,7 +41,7 @@ def test_receipt_without_email_is_not_marked():
 
 @pytest.mark.django_db
 def test_unknown_order_fails_without_retry():
-    # Não é transitório: o DoesNotExist sobe à primeira (com EAGER_PROPAGATES)
+    # Retry só no transitório: o DoesNotExist sobe à primeira (com EAGER_PROPAGATES)
     with pytest.raises(Payment.DoesNotExist):
         send_order_receipt.delay(999_999)
 
@@ -52,6 +54,7 @@ def pay_as_owner(order):
 
 @pytest.mark.django_db
 def test_pay_enqueues_receipt_on_commit(django_capture_on_commit_callbacks):
+    # Ficha 05: on_commit — o pay deixa exatamente 1 callback, que envia o recibo
     order = OrderItemFactory().order
     with django_capture_on_commit_callbacks(execute=True) as callbacks:
         r = pay_as_owner(order)
@@ -63,6 +66,7 @@ def test_pay_enqueues_receipt_on_commit(django_capture_on_commit_callbacks):
 
 @pytest.mark.django_db
 def test_receipt_is_not_sent_inside_the_transaction(django_capture_on_commit_callbacks):
+    # Ficha 05: nada sai antes do commit (falharia com um .delay() solto na transação)
     order = OrderItemFactory().order
     with django_capture_on_commit_callbacks() as callbacks:  # sem execute: não há "commit"
         r = pay_as_owner(order)

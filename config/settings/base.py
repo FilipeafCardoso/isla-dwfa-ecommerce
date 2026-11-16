@@ -74,7 +74,7 @@ ASGI_APPLICATION = "config.asgi.application"
 
 DATABASES = {"default": env.db("DATABASE_URL")}
 
-# Ficha 05: Celery com broker Redis · base /0 para broker e resultados
+# Ficha 05: Celery com broker Redis · base /0 para broker e resultados (a /1 é a cache)
 REDIS_URL = env("REDIS_URL", default="redis://localhost:6379")
 CELERY_BROKER_URL = f"{REDIS_URL}/0"
 CELERY_RESULT_BACKEND = f"{REDIS_URL}/0"
@@ -93,7 +93,7 @@ CACHES = {
     }
 }
 
-# Pausa por encomenda no relatório: faz de trabalho a sério para se ver o progresso
+# Ficha 05: pausa por encomenda no relatório — faz de trabalho a sério para se ver o PROGRESS
 REPORT_ITEM_DELAY = 0.2
 
 # Modelo de utilizador próprio desde o primeiro dia · custom user model from day one

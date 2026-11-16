@@ -30,6 +30,7 @@ def shop(db):
 
 
 def test_report_is_accepted_and_counts_only_own_orders(shop):
+    # Ficha 05: 202 Accepted + Location, e o cliente só conta as suas encomendas
     api = as_(shop["ana"].user)
     r = api.post("/api/v1/reports/orders/")
     assert r.status_code == 202
@@ -48,6 +49,7 @@ def test_report_is_accepted_and_counts_only_own_orders(shop):
 
 
 def test_task_of_another_customer_or_unknown_is_404(shop):
+    # Ficha 05: 404 para o que não é teu — alheia, inventada ou id inválido
     status_url = as_(shop["ana"].user).post("/api/v1/reports/orders/").json()["status_url"]
     other = as_(shop["bruno"].user)
     assert other.get(status_url).status_code == 404  # não se confirma que existe
@@ -56,6 +58,7 @@ def test_task_of_another_customer_or_unknown_is_404(shop):
 
 
 def test_gestor_report_counts_all_orders(shop):
+    # O gestor vê todas (customer_id=None)
     gestor = UserFactory()
     gestor.groups.add(Group.objects.get(name="gestores"))
     api = as_(gestor)
@@ -64,10 +67,12 @@ def test_gestor_report_counts_all_orders(shop):
 
 
 def test_report_requires_authentication(db):
+    # IsAuthenticated por omissão (Ficha 03)
     assert as_(None).post("/api/v1/reports/orders/").status_code == 401
 
 
 def test_user_without_customer_profile_is_400(db):
+    # Sem perfil de cliente e não gestor → 400 em Problem Details
     r = as_(UserFactory()).post("/api/v1/reports/orders/")
     assert r.status_code == 400
     assert r.json()["status"] == 400  # Problem Details

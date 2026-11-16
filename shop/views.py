@@ -171,7 +171,7 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
         return qs.filter(order__customer__user=self.request.user)
 
 
-# Ficha 05: relatório assíncrono — a vista só enfileira; o trabalho é do worker
+# Ficha 05: relatório assíncrono — a vista só enfileira (202 Accepted); o trabalho é do worker
 
 TASK_OWNER_TTL = 3600  # 1 h: depois disso a tarefa é "desconhecida" (404)
 
@@ -199,12 +199,13 @@ class OrdersReportView(APIView):
                 )
             customer_id = customer.id
 
-        # O id é gerado antes de enfileirar para o dono ficar gravado primeiro: o worker
-        # pode acabar antes de esta vista responder, e o GET já tem de saber de quem é
+        # Ficha 05: id gerado antes de enfileirar, para o dono ficar gravado primeiro — o
+        # worker pode acabar antes de esta vista responder, e o GET já tem de saber de quem é
         task_id = str(uuid4())
         cache.set(task_owner_key(task_id), request.user.id, TASK_OWNER_TTL)
         export_orders_report.apply_async(args=(request.user.id, customer_id), task_id=task_id)
 
+        # 202 Accepted: aceite, ainda não feito; o Location diz onde perguntar pelo estado
         status_url = reverse("task-status", args=[task_id])
         return Response(
             {"id": task_id, "status_url": status_url},
@@ -222,11 +223,12 @@ class TaskStatusView(APIView):
     )
     def get(self, request, task_id):
         owner = cache.get(task_owner_key(task_id))
-        # O AsyncResult não sabe de quem é a tarefa: a regra vem da cache. Alheia ou
-        # desconhecida → 404, como as encomendas (não se confirma que existe)
+        # Ficha 05: o AsyncResult não sabe de quem é a tarefa — a regra vem da cache. Alheia
+        # ou desconhecida → 404, como as encomendas (não se confirma que existe)
         if owner is None or (owner != request.user.id and not is_gestor(request.user)):
             raise NotFound()
 
+        # Lê o estado no result backend (/0): PENDING, PROGRESS, SUCCESS, FAILURE…
         result = AsyncResult(task_id)
         state = result.state
         return Response(

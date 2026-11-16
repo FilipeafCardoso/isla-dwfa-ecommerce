@@ -25,5 +25,6 @@ router.register("payments", PaymentViewSet)
 urlpatterns = router.urls + [
     # Ficha 05: relatório assíncrono (202) e estado da tarefa (só o dono ou o gestor)
     path("reports/orders/", OrdersReportView.as_view(), name="report-orders"),
+    # <str:> e não <uuid:>: um id inválido dá o mesmo 404 em Problem Details (não o HTML)
     path("tasks/<str:task_id>/", TaskStatusView.as_view(), name="task-status"),
 ]

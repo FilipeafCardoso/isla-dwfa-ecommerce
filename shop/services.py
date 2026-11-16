@@ -26,7 +26,7 @@ def order_total(order: Order):
 
 @transaction.atomic
 def pay_order(order: Order, method: str = Payment.Method.CARD) -> Order:
-    # Import local: tasks.py usa order_total() deste módulo (evita o import circular)
+    # Ficha 05: import local — tasks.py usa order_total() deste módulo (evita o import circular)
     from .tasks import send_order_receipt
 
     order = Order.objects.select_for_update().get(pk=order.pk)
@@ -38,8 +38,8 @@ def pay_order(order: Order, method: str = Payment.Method.CARD) -> Order:
     Payment.objects.create(order=order, amount=total, method=method)
     order.status = Order.Status.PAID
     order.save(update_fields=["status"])
-    # Só depois do COMMIT: se a transação falhar, o worker não recebe um id que não existe;
-    # e o worker nunca lê a encomenda antes de ela estar gravada como paga.
+    # Ficha 05: on_commit — só se enfileira depois do COMMIT: se a transação falhar, o worker
+    # não recebe um id que não existe, e nunca lê a encomenda antes de estar gravada como paga.
     transaction.on_commit(lambda: send_order_receipt.delay(order.pk))
     return order
 
