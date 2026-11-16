@@ -762,6 +762,46 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/reports/orders/:
+    post:
+      operationId: v1_reports_orders_create
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskAccepted'
+          description: ''
+        '400':
+          description: Utilizador sem perfil de cliente
+  /api/v1/tasks/{task_id}/:
+    get:
+      operationId: v1_tasks_retrieve
+      parameters:
+      - in: path
+        name: task_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskStatus'
+          description: ''
+        '404':
+          description: Tarefa desconhecida, expirada ou de outro
 components:
   schemas:
     Category:
@@ -923,6 +963,23 @@ components:
       - order
       - product
       - quantity
+    OrdersReport:
+      type: object
+      properties:
+        orders:
+          type: integer
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        by_status:
+          type: object
+          additionalProperties:
+            type: integer
+      required:
+      - orders
+      - amount
+      - by_status
     PaginatedCategoryList:
       type: object
       required:
@@ -1215,6 +1272,50 @@ components:
         * `pending` - Pending
         * `paid` - Paid
         * `cancelled` - Cancelled
+    TaskAccepted:
+      type: object
+      properties:
+        id:
+          type: string
+        status_url:
+          type: string
+      required:
+      - id
+      - status_url
+    TaskProgress:
+      type: object
+      properties:
+        current:
+          type: integer
+        total:
+          type: integer
+      required:
+      - current
+      - total
+    TaskStatus:
+      type: object
+      properties:
+        id:
+          type: string
+        state:
+          type: string
+        progress:
+          allOf:
+          - $ref: '#/components/schemas/TaskProgress'
+          nullable: true
+        result:
+          allOf:
+          - $ref: '#/components/schemas/OrdersReport'
+          nullable: true
+        error:
+          type: string
+          nullable: true
+      required:
+      - id
+      - state
+      - progress
+      - result
+      - error
     TokenObtainPair:
       type: object
       properties:

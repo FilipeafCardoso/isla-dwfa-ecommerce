@@ -90,3 +90,30 @@ class PaymentSerializer(serializers.ModelSerializer):
         model = Payment
         fields = ["id", "order", "amount", "method", "paid_at"]
         read_only_fields = ["amount", "paid_at"]
+
+
+# Ficha 05: relatório assíncrono (só documentam as respostas; não há modelo por trás)
+
+
+class TaskAcceptedSerializer(serializers.Serializer):
+    id = serializers.CharField()
+    status_url = serializers.CharField()
+
+
+class TaskProgressSerializer(serializers.Serializer):
+    current = serializers.IntegerField()
+    total = serializers.IntegerField()
+
+
+class OrdersReportSerializer(serializers.Serializer):
+    orders = serializers.IntegerField()
+    amount = serializers.DecimalField(max_digits=12, decimal_places=2, coerce_to_string=True)
+    by_status = serializers.DictField(child=serializers.IntegerField())
+
+
+class TaskStatusSerializer(serializers.Serializer):
+    id = serializers.CharField()
+    state = serializers.CharField()
+    progress = TaskProgressSerializer(allow_null=True)  # só em PROGRESS
+    result = OrdersReportSerializer(allow_null=True)  # só em SUCCESS
+    error = serializers.CharField(allow_null=True)  # só em FAILURE, nunca o traceback

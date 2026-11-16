@@ -16,3 +16,5 @@ CELERY_TASK_EAGER_PROPAGATES = True
 CELERY_TASK_STORE_EAGER_RESULT = True
 CELERY_RESULT_BACKEND = "cache+memory://"
 CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
+# Faz de trabalho a sério sem atrasar os testes
+REPORT_ITEM_DELAY = 0

@@ -85,6 +85,17 @@ CELERY_TASK_ACKS_LATE = True
 CELERY_TASK_SOFT_TIME_LIMIT = 60
 CELERY_TASK_TIME_LIMIT = 120
 
+# Ficha 05: cache do Django no Redis, base /1 (inclui o throttle do login e o dono das tarefas)
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": f"{REDIS_URL}/1",
+    }
+}
+
+# Pausa por encomenda no relatório: faz de trabalho a sério para se ver o progresso
+REPORT_ITEM_DELAY = 0.2
+
 # Modelo de utilizador próprio desde o primeiro dia · custom user model from day one
 AUTH_USER_MODEL = "accounts.User"
 

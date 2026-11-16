@@ -5,14 +5,18 @@ estaria velho quando o worker a lesse.
 """
 
 import os
+import time
+from decimal import Decimal
 from smtplib import SMTPException
 
 from celery import shared_task
+from django.conf import settings
 from django.core.mail import send_mail
 from django.db import transaction
+from django.db.models import Sum
 from django.utils import timezone
 
-from .models import Payment
+from .models import LINE_TOTAL, Order, Payment
 from .services import order_total
 
 
@@ -71,3 +75,28 @@ def send_order_receipt(self, order_id: int) -> str:
         payment.receipt_sent_at = timezone.now()
         payment.save(update_fields=["receipt_sent_at"])
     return "sent"
+
+
+@shared_task(bind=True)
+def export_orders_report(self, user_id: int, customer_id: int | None) -> dict:
+    """Resumo das encomendas: as de um cliente, ou todas (gestor, `customer_id=None`).
+
+    `user_id` é quem pediu; fica nos argumentos da tarefa (visível no log do worker).
+    """
+    # Uma só query: o total vem anotado, como no OrderViewSet (sem N+1)
+    qs = Order.objects.annotate(total=Sum(LINE_TOTAL)).order_by("id")
+    if customer_id is not None:
+        qs = qs.filter(customer_id=customer_id)
+    rows = list(qs.values_list("status", "total"))
+
+    n = len(rows)
+    amount = Decimal("0.00")
+    by_status = {status: 0 for status in Order.Status.values}
+    for i, (status, total) in enumerate(rows, start=1):
+        amount += total or Decimal("0.00")  # encomenda sem linhas → total None
+        by_status[status] += 1
+        self.update_state(state="PROGRESS", meta={"current": i, "total": n})
+        time.sleep(settings.REPORT_ITEM_DELAY)
+
+    # amount em string: JSON não tem decimal (a mesma regra do price)
+    return {"orders": n, "amount": str(amount), "by_status": by_status}
