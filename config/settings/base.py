@@ -74,6 +74,17 @@ ASGI_APPLICATION = "config.asgi.application"
 
 DATABASES = {"default": env.db("DATABASE_URL")}
 
+# Ficha 05: Celery com broker Redis · base /0 para broker e resultados
+REDIS_URL = env("REDIS_URL", default="redis://localhost:6379")
+CELERY_BROKER_URL = f"{REDIS_URL}/0"
+CELERY_RESULT_BACKEND = f"{REDIS_URL}/0"
+# acks_late: a mensagem só é confirmada depois de a tarefa acabar; se o worker morrer a meio,
+# o Redis volta a entregá-la — por isso as tarefas têm de ser idempotentes.
+CELERY_TASK_ACKS_LATE = True
+# Limites (slide 8): o soft lança exceção para a tarefa arrumar; o hard mata-a
+CELERY_TASK_SOFT_TIME_LIMIT = 60
+CELERY_TASK_TIME_LIMIT = 120
+
 # Modelo de utilizador próprio desde o primeiro dia · custom user model from day one
 AUTH_USER_MODEL = "accounts.User"
 
