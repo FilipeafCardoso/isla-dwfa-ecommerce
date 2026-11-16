@@ -117,6 +117,8 @@ class Payment(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     method = models.CharField(max_length=10, choices=Method.choices, default=Method.CARD)
     paid_at = models.DateTimeField(auto_now_add=True)
+    # Ficha 05: preenchido pela tarefa do recibo; nulo = recibo ainda não enviado
+    receipt_sent_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ["-paid_at"]
